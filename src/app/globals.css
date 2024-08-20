@@ -1,4 +1,22 @@
+/* Import Google Fonts first */
+@import url('https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap');
+
+/* Tailwind CSS Directives */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* Reset all elements to remove default margin and padding */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  width: 100%;
+  font-family: 'Nunito', sans-serif;
+  overflow-x: hidden;
+  background-color: #fff; /* or your desired background color */
+}

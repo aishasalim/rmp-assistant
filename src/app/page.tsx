@@ -1,8 +1,29 @@
 'use client'
-import { Box, Button, Stack, TextField } from '@mui/material'
+import { Box, Button, Stack, TextField, Typography } from '@mui/material'
 import { useState } from 'react'
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { onAuthStateChanged } from 'firebase/auth'
+import { auth } from '../../utils/firebase.js' 
+import { signOut } from "firebase/auth";
+import { CircularProgress } from '@mui/material';
+
 
 export default function Home() {
+  const router = useRouter()
+  const [loading, setLoading] = useState(true) // Add loading state
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        router.push('/login') // Redirect to login if not signed in
+      }
+    })
+
+    // Cleanup subscription on component unmount
+    return () => unsubscribe()
+  }, [router])
+
   // We'll add more code here in the following steps
   const [messages, setMessages] = useState([
     {
@@ -49,6 +70,44 @@ export default function Home() {
     })
   }
 
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      router.push('/login'); // Redirect to login after signing out
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
+  
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        router.push('/login') // Redirect to login if not signed in
+      } else {
+        setLoading(false) // Set loading to false if user is signed in
+      }
+    })
+
+    // Cleanup subscription on component unmount
+    return () => unsubscribe()
+  }, [router])
+
+  if (loading) {
+    return (
+      <Box
+        width="100vw"
+        height="100vh"
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
+  
+
   return (
     <Box
       width="100vw"
@@ -58,6 +117,15 @@ export default function Home() {
       justifyContent="center"
       alignItems="center"
     >
+          {/* Sign-Out Button */}
+    <Button
+      variant="contained"
+      color="secondary"
+      onClick={handleSignOut}
+      sx={{ position: 'absolute', top: 20, right: 20 }}
+    >
+      Sign Out
+    </Button>
       <Stack
         direction={'column'}
         width="500px"
@@ -110,6 +178,4 @@ export default function Home() {
       </Stack>
     </Box>
   )
-  
 }
-
