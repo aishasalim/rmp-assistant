@@ -1,0 +1,41 @@
+{
+    "reviews": [
+      {
+        "professor": "Dr. John McAllister",
+        "review": "Incredible professor who explains concepts clearly and engages students actively.",
+        "subject": "Mathematics",
+        "stars": 5
+      },
+      {
+        "professor": "Prof. Amelia Rodriguez",
+        "review": "Very knowledgeable and approachable. She makes difficult topics easy to understand.",
+        "subject": "Physics",
+        "stars": 4
+      },
+      {
+        "professor": "Dr. Samuel Carter",
+        "review": "Good lecturer but sometimes a bit fast-paced. Overall, a great learning experience.",
+        "subject": "Computer Science",
+        "stars": 4
+      },
+      {
+        "professor": "Prof. Lisa Patel",
+        "review": "Excellent at breaking down complex ideas into digestible parts. Very supportive.",
+        "subject": "Chemistry",
+        "stars": 5
+      },
+      {
+        "professor": "Dr. Michael Nguyen",
+        "review": "Patient and thorough, but his grading is tough. Be prepared to work hard.",
+        "subject": "Biology",
+        "stars": 3
+      },
+      {
+        "professor": "Prof. Emily Thompson",
+        "review": "Engaging lectures with a lot of real-world examples. Encourages critical thinking.",
+        "subject": "Philosophy",
+        "stars": 5
+      }
+    ]
+  }
+  
