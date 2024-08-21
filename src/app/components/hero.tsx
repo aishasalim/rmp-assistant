@@ -47,7 +47,7 @@ const Hero: React.FC<HeroProps> = ({ handleAskAI }) => {
           boxShadow: "none",
           width: "150px",
           "&:hover": {
-            bgcolor: "#0F172A",
+            bgcolor: '#4DA9B6',
             boxShadow: "none",
           },
         }}

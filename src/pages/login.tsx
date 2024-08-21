@@ -115,12 +115,13 @@ const Login = () => {
         <Image
           src="/image-logo.png"
           alt="Chatbot photo"
-          width={500}
-          height={300}
+          width={380}
+          height={280}
           style={{
             borderRadius: '8px',
             maxWidth: '100%',
             height: 'auto',
+            boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)',
           }}
         />
       </Box>
@@ -141,12 +142,13 @@ const Login = () => {
         <Image
           src="/image-logo.png"
           alt="Chatbot photo"
-          width={500}
-          height={300}
+          width={380}
+          height={280}
           style={{
             borderRadius: '8px',
             maxWidth: '100%',
             height: 'auto',
+            boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)',
           }}
         />
          <AuthForm
