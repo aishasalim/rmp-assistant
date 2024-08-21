@@ -3,6 +3,92 @@
 import { NextResponse } from 'next/server';
 import { Pinecone } from '@pinecone-database/pinecone';
 import OpenAI from 'openai';
+import axios from 'axios';
+import * as cheerio from 'cheerio';
+
+// Function to extract URLs from a text
+function extractUrls(text) {
+  const urlRegex = /https:\/\/www\.ratemyprofessors\.com\/professor\/\d+/g;
+  return text.match(urlRegex) || [];
+}
+
+// Function to remove URLs from a text
+function removeUrls(text) {
+  const urlRegex = /https:\/\/www\.ratemyprofessors\.com\/professor\/\d+/g;
+  return text.replace(urlRegex, '').trim();
+}
+
+// Function to scrape a webpage
+async function scrapeWebpage(url) {
+  try {
+    // Fetch the HTML of the page
+    const { data } = await axios.get(url);
+    
+    // Load the HTML into cheerio
+    const $ = cheerio.load(data);
+    
+    // Select the element containing the professor's name
+    const name = $('div.NameTitle__Name-dowf0z-0 span').first().text().trim();
+    const lastName = $('div.NameTitle__Name-dowf0z-0 span.NameTitle__LastNameWrapper-dowf0z-2').first().text().trim();
+    const fullName = `${name} ${lastName}`;
+
+    // Select the rating element and extract its text content
+    const ratingText = $('div.RatingValue__Numerator-qw8sqy-2.liyUjw').text().trim();
+
+    // Select the element containing the comments
+    const comments = $('div.Comments__StyledComments-dzzyvm-0').text().trim();
+
+    const review = {
+      name: fullName,
+      rating: ratingText,
+      review: comments
+    }
+
+    console.log(review);
+    return review;
+  } catch (error) {
+    console.error(`Failed to retrieve the webpage. Error: ${error}`);
+    return null;
+  }
+}
+
+async function upsertPC(text, client ,index) {
+  const urls = extractUrls(text);
+  const processed_data = [];
+
+  for (const url of urls) {
+    const data = await scrapeWebpage(url);
+    if (!data) continue;
+
+    try {
+      const response = await client.embeddings.create({
+        input: data.review,
+        model: "text-embedding-ada-002"
+      });
+
+      const embedding = response.data[0].embedding;
+      processed_data.push({
+        values: embedding,
+        id: data.name,
+        metadata: {
+          rating: data.rating,
+          review: data.review,
+        }
+      });
+    } catch (error) {
+      console.error(`Failed to create embedding. Error: ${error}`);
+    }
+  }
+
+  try {
+    console.log(processed_data)
+    const upsert_response = await index.upsert(processed_data);
+    console.log(upsert_response);
+  } catch (error) {
+    console.error(`Failed to upsert vectors. Error: ${error}`);
+  }
+}
+
 
 // Step 2: Define the system prompt
 const systemPrompt = `
@@ -24,6 +110,7 @@ export async function POST(req) {
 
   // Step 5: Process the user’s query
   const text = data[data.length - 1].content;
+  upsertPC(text, openai, index)
   const embedding = await openai.embeddings.create({
     model: 'text-embedding-ada-002', // Make sure to use the correct model
     input: text,
@@ -54,36 +141,37 @@ export async function POST(req) {
   const lastMessageContent = lastMessage.content + resultString;
   const lastDataWithoutLastMessage = data.slice(0, data.length - 1);
 
-  // Step 9: Send request to OpenAI
-  const completion = await openai.chat.completions.create({
-    messages: [
-      { role: 'system', content: systemPrompt },
-      ...lastDataWithoutLastMessage,
-      { role: 'user', content: lastMessageContent },
-    ],
-    model: 'gpt-3.5-turbo',
-    stream: true,
-  });
+  // // Step 9: Send request to OpenAI
+  // const completion = await openai.chat.completions.create({
+  //   messages: [
+  //     { role: 'system', content: systemPrompt },
+  //     ...lastDataWithoutLastMessage,
+  //     { role: 'user', content: lastMessageContent },
+  //   ],
+  //   model: 'gpt-3.5-turbo',
+  //   stream: true,
+  // });
 
-  // Step 10: Set up streaming response
-  const stream = new ReadableStream({
-    async start(controller) {
-      const encoder = new TextEncoder();
-      try {
-        for await (const chunk of completion) {
-          const content = chunk.choices[0]?.delta?.content;
-          if (content) {
-            const text = encoder.encode(content);
-            controller.enqueue(text);
-          }
-        }
-      } catch (err) {
-        controller.error(err);
-      } finally {
-        controller.close();
-      }
-    },
-  });
+  // // Step 10: Set up streaming response
+  // const stream = new ReadableStream({
+  //   async start(controller) {
+  //     const encoder = new TextEncoder();
+  //     try {
+  //       for await (const chunk of completion) {
+  //         const content = chunk.choices[0]?.delta?.content;
+  //         if (content) {
+  //           const text = encoder.encode(content);
+  //           controller.enqueue(text);
+  //         }
+  //       }
+  //     } catch (err) {
+  //       controller.error(err);
+  //     } finally {
+  //       controller.close();
+  //     }
+  //   },
+  // });
 
-  return new NextResponse(stream);
+  // return new NextResponse(stream);
+  return new NextResponse();
 }
