@@ -65,13 +65,16 @@ export default function Home() {
       },
       body: JSON.stringify([...messages, { role: 'user', content: message }]),
     }).then(async (res) => {
+      if (!res.body) {
+        throw new Error("Response body is null");
+      }
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let result = '';
-  
-      return reader.read().then(function processText({ done, value }) {
+    
+      return reader.read().then(function processText({ done, value }): Promise<string> {
         if (done) {
-          return result;
+          return Promise.resolve(result);
         }
         const text = decoder.decode(value || new Uint8Array(), { stream: true });
         setMessages((messages) => {
@@ -83,8 +86,8 @@ export default function Home() {
           ];
         });
         return reader.read().then(processText);
-      });
-    });
+      });         
+    });    
   };
   
 
