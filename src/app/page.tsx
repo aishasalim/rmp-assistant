@@ -12,7 +12,7 @@ import IntroMessage from "./components/intromessage";
 export default function Home() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
-  const messagesEndRef = useRef(null);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [introVisible, setIntroVisible] = useState(true);
   const [message, setMessage] = useState('')
@@ -39,7 +39,7 @@ export default function Home() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleKeyPress = (event) => {
+  const handleKeyPress = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
       sendMessage();
