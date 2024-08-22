@@ -37,9 +37,14 @@ const Login = () => {
       // Redirect to /chatbot after successful login/sign-up
       router.push("/");
       setError("");
-    } catch (err) {
+    } catch (err: unknown) {
+      if (err instanceof Error) {
       console.error("Firebase Error:", err.message); // Log the specific error message
       setError(err.message); // Show the detailed error to help debugging
+    } else {
+      console.error("An unexpected error occurred", err);
+      setError("An unexpected error occurred");
+    }
     }
   };
 
@@ -47,9 +52,14 @@ const Login = () => {
     try {
       await signInWithPopup(auth, googleProvider);
       router.push("/");
-    } catch (err) {
+    } catch (err: unknown) {
+      if (err instanceof Error) {
       console.error("Google Sign-In Error:", err.message);
       setError(err.message);
+    } else {
+      console.error("An unexpected error occurred", err);
+      setError("An unexpected error occurred");
+    }
     }
   };
 
