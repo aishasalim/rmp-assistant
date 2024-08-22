@@ -12,10 +12,15 @@ function extractUrls(text) {
   return text.match(urlRegex) || [];
 }
 
-// Function to remove URLs from a text
-function removeUrls(text) {
-  const urlRegex = /https:\/\/www\.ratemyprofessors\.com\/professor\/\d+/g;
-  return text.replace(urlRegex, '').trim();
+// Function to replace URLs from a text
+function replaceUrlsInText(text, urls, processed_data) {
+  for(let i = 0; i < urls.length; i++){
+    text = text.replace(
+      urls[i], 
+      processed_data[i].id + " with " + processed_data[i].metadata["rating"] + " star rating in " + processed_data[i].metadata["department"]
+    );
+  }
+  return text;
 }
 
 // Function to scrape a webpage
@@ -38,13 +43,16 @@ async function scrapeWebpage(url) {
     // Select the element containing the comments
     const comments = $('div.Comments__StyledComments-dzzyvm-0').text().trim();
 
+    // Extract department name
+    const departmentName = $('a.TeacherDepartment__StyledDepartmentLink-fl79e8-0').text().trim();
+
     const review = {
       name: fullName,
       rating: ratingText,
-      review: comments
+      review: comments,
+      department: departmentName,
     }
 
-    console.log(review);
     return review;
   } catch (error) {
     console.error(`Failed to retrieve the webpage. Error: ${error}`);
@@ -73,6 +81,7 @@ async function upsertPC(text, client ,index) {
         metadata: {
           rating: data.rating,
           review: data.review,
+          department: data.department,
         }
       });
     } catch (error) {
@@ -81,11 +90,11 @@ async function upsertPC(text, client ,index) {
   }
 
   try {
-    console.log(processed_data)
     const upsert_response = await index.upsert(processed_data);
-    console.log(upsert_response);
+    return replaceUrlsInText(text, urls, processed_data);
   } catch (error) {
     console.error(`Failed to upsert vectors. Error: ${error}`);
+    return null;
   }
 }
 
@@ -109,8 +118,11 @@ export async function POST(req) {
   const openai = new OpenAI();
 
   // Step 5: Process the user’s query
-  const text = data[data.length - 1].content;
-  upsertPC(text, openai, index)
+  let text = data[data.length - 1].content;
+  if(extractUrls(text).length > 0){
+    text = await upsertPC(text, openai, index)
+  }
+  console.log(text)
   const embedding = await openai.embeddings.create({
     model: 'text-embedding-ada-002', // Make sure to use the correct model
     input: text,
@@ -141,37 +153,36 @@ export async function POST(req) {
   const lastMessageContent = lastMessage.content + resultString;
   const lastDataWithoutLastMessage = data.slice(0, data.length - 1);
 
-  // // Step 9: Send request to OpenAI
-  // const completion = await openai.chat.completions.create({
-  //   messages: [
-  //     { role: 'system', content: systemPrompt },
-  //     ...lastDataWithoutLastMessage,
-  //     { role: 'user', content: lastMessageContent },
-  //   ],
-  //   model: 'gpt-3.5-turbo',
-  //   stream: true,
-  // });
+  // Step 9: Send request to OpenAI
+  const completion = await openai.chat.completions.create({
+    messages: [
+      { role: 'system', content: systemPrompt },
+      ...lastDataWithoutLastMessage,
+      { role: 'user', content: lastMessageContent },
+    ],
+    model: 'gpt-3.5-turbo',
+    stream: true,
+  });
 
-  // // Step 10: Set up streaming response
-  // const stream = new ReadableStream({
-  //   async start(controller) {
-  //     const encoder = new TextEncoder();
-  //     try {
-  //       for await (const chunk of completion) {
-  //         const content = chunk.choices[0]?.delta?.content;
-  //         if (content) {
-  //           const text = encoder.encode(content);
-  //           controller.enqueue(text);
-  //         }
-  //       }
-  //     } catch (err) {
-  //       controller.error(err);
-  //     } finally {
-  //       controller.close();
-  //     }
-  //   },
-  // });
+  // Step 10: Set up streaming response
+  const stream = new ReadableStream({
+    async start(controller) {
+      const encoder = new TextEncoder();
+      try {
+        for await (const chunk of completion) {
+          const content = chunk.choices[0]?.delta?.content;
+          if (content) {
+            const text = encoder.encode(content);
+            controller.enqueue(text);
+          }
+        }
+      } catch (err) {
+        controller.error(err);
+      } finally {
+        controller.close();
+      }
+    },
+  });
 
-  // return new NextResponse(stream);
-  return new NextResponse();
+  return new NextResponse(stream);
 }
