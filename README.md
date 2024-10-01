@@ -5,14 +5,6 @@
 <img width="603" alt="ratemyprofessor" src="https://github.com/user-attachments/assets/7d42720a-4646-4d5d-b7d5-a0e7d0c85db3">
 
 
-## Table of Contents
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Contributing](#contributing)
-- [License](#license)
-
 ## Features
 - **Professor Summarization**: Quickly get a summary of professor reviews from Rate My Professor.
 - **Recommendations**: Receive tailored recommendations for professors based on your preferences and schedule.
